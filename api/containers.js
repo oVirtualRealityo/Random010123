@@ -2,9 +2,9 @@ import fetch from "node-fetch";
 
 // GitHub details
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;  // Use environment variable for security
-const REPO_OWNER = "your_github_username";
-const REPO_NAME = "your_repo_name";
-const FILE_PATH = "containers.json";
+const REPO_OWNER = process.env.REPO_OWNER; // Set in Vercel env vars
+const REPO_NAME = process.env.REPO_NAME; // Set in Vercel env vars
+const FILE_PATH = "containers.json"; // GitHub file path for container data
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
@@ -61,6 +61,23 @@ export default async function handler(req, res) {
       }
 
       res.status(200).json({ message: "Container added successfully!" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  } else if (req.method === "GET") {
+    try {
+      // Fetch the containers JSON from GitHub
+      const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${GITHUB_TOKEN}` },
+      });
+      const fileData = await response.json();
+
+      // Decode and return the containers data
+      const currentData = JSON.parse(
+        Buffer.from(fileData.content, "base64").toString()
+      );
+      res.status(200).json(currentData);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
